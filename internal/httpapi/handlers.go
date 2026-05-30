@@ -3,10 +3,16 @@ package httpapi
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/my-search-index/core/internal/search"
+)
+
+const (
+	maxUploadMemory = 32 << 20
+	maxUploadSize   = 100 << 20
 )
 
 // handler groups the HTTP handlers that share the same search service.
@@ -48,6 +54,11 @@ func (h *handler) listDocuments(w http.ResponseWriter, r *http.Request) {
 // addDocument indexes a single file or a directory, depending on the request
 // payload.
 func (h *handler) addDocument(w http.ResponseWriter, r *http.Request) {
+	if strings.HasPrefix(strings.ToLower(r.Header.Get("Content-Type")), "multipart/form-data") {
+		h.addUploadedDocuments(w, r)
+		return
+	}
+
 	var req documentRequest
 	if err := readJSON(r, &req); err != nil {
 		writeError(w, http.StatusBadRequest, err)
@@ -77,6 +88,45 @@ func (h *handler) addDocument(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusCreated, response{OK: true})
+}
+
+// addUploadedDocuments stores and indexes files sent as multipart form data.
+func (h *handler) addUploadedDocuments(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, maxUploadSize)
+	if err := r.ParseMultipartForm(maxUploadMemory); err != nil {
+		writeError(w, http.StatusBadRequest, fmt.Errorf("parse multipart form: %w", err))
+		return
+	}
+	defer r.MultipartForm.RemoveAll()
+
+	files := r.MultipartForm.File["files"]
+	files = append(files, r.MultipartForm.File["file"]...)
+	if len(files) == 0 {
+		writeError(w, http.StatusBadRequest, errors.New("multipart file field is required"))
+		return
+	}
+
+	documents := make([]search.Document, 0, len(files))
+	for _, header := range files {
+		file, err := header.Open()
+		if err != nil {
+			writeError(w, http.StatusBadRequest, fmt.Errorf("open uploaded file: %w", err))
+			return
+		}
+
+		doc, err := h.service.AddUploadedDocument(header.Filename, file)
+		_ = file.Close()
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err)
+			return
+		}
+		documents = append(documents, doc)
+	}
+
+	writeJSON(w, http.StatusCreated, response{
+		OK:   true,
+		Data: documents,
+	})
 }
 
 // removeDocument removes one indexed file identified by its path query

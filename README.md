@@ -13,6 +13,7 @@ Configuration:
 ```sh
 PORT=8080
 SEARCH_INDEX_PATH=search.idx
+UPLOAD_DIR=uploads
 LOG_LEVEL=info
 LOG_FORMAT=text
 ```
@@ -34,7 +35,25 @@ DELETE /api/v1/documents?path=<file>
 GET    /api/v1/search?q=<query>
 ```
 
-Add one file:
+Upload one file from a UI or another client:
+
+```sh
+curl -X POST http://localhost:8080/api/v1/documents \
+  -F 'file=@/home/stac/dev-learning/data/web-crawler.txt'
+```
+
+Upload multiple files:
+
+```sh
+curl -X POST http://localhost:8080/api/v1/documents \
+  -F 'files=@/home/stac/dev-learning/data/web-crawler.txt' \
+  -F 'files=@/home/stac/dev-learning/data/search-engines.txt'
+```
+
+The backend stores uploaded files under `UPLOAD_DIR`, then indexes those stored
+copies so snippets can reopen the files after the upload request completes.
+
+Index one backend-local file:
 
 ```sh
 curl -X POST http://localhost:8080/api/v1/documents \

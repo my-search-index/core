@@ -1,4 +1,5 @@
 search.idx
 /core
+/uploads
 *.log
 .env

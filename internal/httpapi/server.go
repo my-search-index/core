@@ -15,23 +15,22 @@ import (
 // The router owns request middleware and versioned API routes. Business logic
 // stays in the search service so handlers remain thin transport adapters.
 func NewRouter(service *search.Service) http.Handler {
-	h := &handler{service: service}
+	handler := &handler{service: service}
 
-	r := chi.NewRouter()
-	r.Use(middleware.RequestID)
-	r.Use(middleware.RealIP)
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
-	r.Use(middleware.Timeout(30 * time.Second))
+	router := chi.NewRouter()
+	router.Use(middleware.RequestID)
+	router.Use(middleware.Logger)
+	router.Use(middleware.Recoverer)
+	router.Use(middleware.Timeout(30 * time.Second))
 
-	r.Get("/healthz", h.health)
+	router.Get("/healthz", handler.health)
 
-	r.Route("/api/v1", func(r chi.Router) {
-		r.Get("/documents", h.listDocuments)
-		r.Post("/documents", h.addDocument)
-		r.Delete("/documents", h.removeDocument)
-		r.Get("/search", h.search)
+	router.Route("/api/v1", func(r chi.Router) {
+		r.Get("/documents", handler.listDocuments)
+		r.Post("/documents", handler.addDocument)
+		r.Delete("/documents", handler.removeDocument)
+		r.Get("/search", handler.search)
 	})
 
-	return r
+	return router
 }

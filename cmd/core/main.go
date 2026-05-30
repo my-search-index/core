@@ -37,7 +37,7 @@ func run() error {
 	cfg := loadConfig()
 	configureLogger(cfg)
 
-	service, err := search.NewService(cfg.IndexPath)
+	service, err := search.NewService(cfg.IndexPath, cfg.UploadDir)
 	if err != nil {
 		return err
 	}
@@ -52,7 +52,7 @@ func run() error {
 
 	errCh := make(chan error, 1)
 	go func() {
-		slog.Info("search index core listening", "addr", cfg.Addr, "index_path", cfg.IndexPath)
+		slog.Info("search index core listening", "addr", cfg.Addr, "index_path", cfg.IndexPath, "upload_dir", cfg.UploadDir)
 		errCh <- server.ListenAndServe()
 	}()
 
@@ -88,6 +88,7 @@ func loadDotEnv() error {
 type config struct {
 	Addr      string
 	IndexPath string
+	UploadDir string
 	LogLevel  string
 	LogFormat string
 }
@@ -98,6 +99,7 @@ func loadConfig() config {
 	return config{
 		Addr:      fmt.Sprintf(":%s", port),
 		IndexPath: getenv("SEARCH_INDEX_PATH", "search.idx"),
+		UploadDir: getenv("UPLOAD_DIR", "uploads"),
 		LogLevel:  getenv("LOG_LEVEL", "info"),
 		LogFormat: getenv("LOG_FORMAT", "text"),
 	}
