@@ -13,7 +13,16 @@ Configuration:
 ```sh
 PORT=8080
 SEARCH_INDEX_PATH=search.idx
+LOG_LEVEL=info
+LOG_FORMAT=text
 ```
+
+For local development, the server also loads these values from a `.env` file in
+the core repo directory. Exported shell variables still take priority.
+
+Logging is configured with `LOG_LEVEL` (`debug`, `info`, `warn`, or `error`)
+and `LOG_FORMAT` (`text` or `json`). Use `debug` while wiring UI behavior and
+`json` when shipping logs to a collector.
 
 ## Endpoints
 

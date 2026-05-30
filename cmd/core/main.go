@@ -8,8 +8,11 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
+
+	"github.com/joho/godotenv"
 
 	"github.com/my-search-index/core/internal/httpapi"
 	"github.com/my-search-index/core/internal/search"
@@ -27,7 +30,12 @@ func main() {
 //
 // It blocks until the server fails or the process receives an interrupt signal.
 func run() error {
+	if err := loadDotEnv(); err != nil {
+		return err
+	}
+
 	cfg := loadConfig()
+	configureLogger(cfg)
 
 	service, err := search.NewService(cfg.IndexPath)
 	if err != nil {
@@ -64,10 +72,24 @@ func run() error {
 	}
 }
 
+// loadDotEnv loads local development configuration from a .env file when one
+// exists.
+//
+// Values already exported in the process environment take priority over .env
+// values, which keeps production configuration explicit.
+func loadDotEnv() error {
+	if err := godotenv.Load(); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("load .env: %w", err)
+	}
+	return nil
+}
+
 // config contains the runtime settings needed by the HTTP server.
 type config struct {
 	Addr      string
 	IndexPath string
+	LogLevel  string
+	LogFormat string
 }
 
 // loadConfig reads runtime configuration from environment variables.
@@ -76,6 +98,37 @@ func loadConfig() config {
 	return config{
 		Addr:      fmt.Sprintf(":%s", port),
 		IndexPath: getenv("SEARCH_INDEX_PATH", "search.idx"),
+		LogLevel:  getenv("LOG_LEVEL", "info"),
+		LogFormat: getenv("LOG_FORMAT", "text"),
+	}
+}
+
+// configureLogger sets the process-wide structured logger.
+func configureLogger(cfg config) {
+	opts := &slog.HandlerOptions{
+		Level: parseLogLevel(cfg.LogLevel),
+	}
+
+	var handler slog.Handler
+	if strings.EqualFold(cfg.LogFormat, "json") {
+		handler = slog.NewJSONHandler(os.Stdout, opts)
+	} else {
+		handler = slog.NewTextHandler(os.Stdout, opts)
+	}
+	slog.SetDefault(slog.New(handler))
+}
+
+// parseLogLevel converts a LOG_LEVEL string into a slog level.
+func parseLogLevel(value string) slog.Level {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "debug":
+		return slog.LevelDebug
+	case "warn", "warning":
+		return slog.LevelWarn
+	case "error":
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
 	}
 }
 

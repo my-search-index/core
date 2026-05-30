@@ -2,6 +2,8 @@ package search
 
 import (
 	"fmt"
+	"log/slog"
+	"os"
 	"sync"
 
 	searchindex "github.com/my-search-index/search-index"
@@ -25,6 +27,7 @@ func NewService(indexPath string) (*Service, error) {
 	if err != nil {
 		return nil, fmt.Errorf("load index: %w", err)
 	}
+	slog.Info("search index loaded", "index_path", indexPath, "documents", len(idx.Docs), "terms", len(idx.Postings))
 	return &Service{indexPath: indexPath, idx: idx}, nil
 }
 
@@ -32,7 +35,33 @@ func NewService(indexPath string) (*Service, error) {
 func (s *Service) Search(query string) []searchindex.Result {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return s.idx.Search(query)
+
+	results := s.idx.Search(query)
+	missingSnippetCount := 0
+	for _, result := range results {
+		if len(result.Snippets) > 0 {
+			continue
+		}
+
+		missingSnippetCount++
+		if _, err := os.Stat(result.Doc.FilePath); err != nil {
+			slog.Warn(
+				"search result has no snippets because source file cannot be opened",
+				"query", query,
+				"doc_id", result.Doc.ID,
+				"file_path", result.Doc.FilePath,
+				"error", err,
+			)
+		}
+	}
+
+	slog.Debug(
+		"search completed",
+		"query", query,
+		"results", len(results),
+		"results_without_snippets", missingSnippetCount,
+	)
+	return results
 }
 
 // ListDocuments returns all indexed documents in deterministic order.
