@@ -11,10 +11,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/my-search-index/search-index-core/internal/httpapi"
-	"github.com/my-search-index/search-index-core/internal/search"
+	"github.com/my-search-index/core/internal/httpapi"
+	"github.com/my-search-index/core/internal/search"
 )
 
+// main starts the search index core API process.
 func main() {
 	if err := run(); err != nil {
 		slog.Error("server stopped", "error", err)
@@ -22,6 +23,9 @@ func main() {
 	}
 }
 
+// run wires configuration, services, and the HTTP server together.
+//
+// It blocks until the server fails or the process receives an interrupt signal.
 func run() error {
 	cfg := loadConfig()
 
@@ -60,11 +64,13 @@ func run() error {
 	}
 }
 
+// config contains the runtime settings needed by the HTTP server.
 type config struct {
 	Addr      string
 	IndexPath string
 }
 
+// loadConfig reads runtime configuration from environment variables.
 func loadConfig() config {
 	port := getenv("PORT", "8080")
 	return config{
@@ -73,6 +79,7 @@ func loadConfig() config {
 	}
 }
 
+// getenv returns the environment value for key, or fallback when key is empty.
 func getenv(key, fallback string) string {
 	value := os.Getenv(key)
 	if value == "" {

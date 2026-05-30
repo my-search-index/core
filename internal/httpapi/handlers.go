@@ -6,25 +6,30 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/my-search-index/search-index-core/internal/search"
+	"github.com/my-search-index/core/internal/search"
 )
 
+// handler groups the HTTP handlers that share the same search service.
 type handler struct {
 	service *search.Service
 }
 
+// response is the common JSON envelope returned by every API endpoint.
 type response struct {
 	OK    bool        `json:"ok"`
 	Data  interface{} `json:"data,omitempty"`
 	Error string      `json:"error,omitempty"`
 }
 
+// documentRequest is the JSON payload used to add either one file or every
+// supported file under a directory.
 type documentRequest struct {
 	Path       string   `json:"path"`
 	Directory  bool     `json:"directory"`
 	Extensions []string `json:"extensions,omitempty"`
 }
 
+// health reports whether the API process is running.
 func (h *handler) health(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, response{
 		OK:   true,
@@ -32,6 +37,7 @@ func (h *handler) health(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// listDocuments returns the documents currently stored in the index.
 func (h *handler) listDocuments(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, response{
 		OK:   true,
@@ -39,6 +45,8 @@ func (h *handler) listDocuments(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// addDocument indexes a single file or a directory, depending on the request
+// payload.
 func (h *handler) addDocument(w http.ResponseWriter, r *http.Request) {
 	var req documentRequest
 	if err := readJSON(r, &req); err != nil {
@@ -71,6 +79,8 @@ func (h *handler) addDocument(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, response{OK: true})
 }
 
+// removeDocument removes one indexed file identified by its path query
+// parameter.
 func (h *handler) removeDocument(w http.ResponseWriter, r *http.Request) {
 	path := strings.TrimSpace(r.URL.Query().Get("path"))
 	if path == "" {
@@ -86,6 +96,7 @@ func (h *handler) removeDocument(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, response{OK: true})
 }
 
+// search executes a query and returns ranked search results with snippets.
 func (h *handler) search(w http.ResponseWriter, r *http.Request) {
 	query := strings.TrimSpace(r.URL.Query().Get("q"))
 	if query == "" {
@@ -99,6 +110,8 @@ func (h *handler) search(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// readJSON decodes one JSON request body and rejects unknown fields so API
+// clients get quick feedback for misspelled payload keys.
 func readJSON(r *http.Request, dst interface{}) error {
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
@@ -108,12 +121,14 @@ func readJSON(r *http.Request, dst interface{}) error {
 	return nil
 }
 
+// writeJSON serializes a response envelope with the provided HTTP status code.
 func writeJSON(w http.ResponseWriter, status int, payload response) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(payload)
 }
 
+// writeError serializes an error using the common response envelope.
 func writeError(w http.ResponseWriter, status int, err error) {
 	writeJSON(w, status, response{
 		OK:    false,

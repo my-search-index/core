@@ -7,9 +7,13 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
-	"github.com/my-search-index/search-index-core/internal/search"
+	"github.com/my-search-index/core/internal/search"
 )
 
+// NewRouter builds the HTTP API router for the search index core service.
+//
+// The router owns request middleware and versioned API routes. Business logic
+// stays in the search service so handlers remain thin transport adapters.
 func NewRouter(service *search.Service) http.Handler {
 	h := &handler{service: service}
 

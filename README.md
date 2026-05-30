@@ -5,7 +5,7 @@ HTTP API for the `github.com/my-search-index/search-index` library.
 ## Run
 
 ```sh
-go run ./cmd/search-index-core
+go run ./cmd/core
 ```
 
 Configuration:

@@ -1,4 +1,4 @@
-module github.com/my-search-index/search-index-core
+module github.com/my-search-index/core
 
 go 1.24.5
 
