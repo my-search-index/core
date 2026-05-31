@@ -107,6 +107,31 @@ func TestAddDocumentMultipartRequiresFileField(t *testing.T) {
 	}
 }
 
+func TestSearchReturnsEmptyArrayWhenNoDocumentsMatch(t *testing.T) {
+	router, _ := newTestRouter(t)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/search?q=missing", nil)
+	rec := httptest.NewRecorder()
+
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d: %s", http.StatusOK, rec.Code, rec.Body.String())
+	}
+
+	var resp apiResponse[[]search.Result]
+	decodeJSON(t, rec.Body, &resp)
+	if !resp.OK {
+		t.Fatalf("expected ok search response, got error %q", resp.Error)
+	}
+	if resp.Data == nil {
+		t.Fatalf("expected empty search data array, got nil")
+	}
+	if len(resp.Data) != 0 {
+		t.Fatalf("expected no search results, got %d", len(resp.Data))
+	}
+}
+
 func TestRouterAllowsConfiguredCORSOrigin(t *testing.T) {
 	router, _ := newTestRouter(t)
 

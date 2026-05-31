@@ -16,6 +16,9 @@ import (
 // Document describes a file stored in the search index.
 type Document = searchindex.Document
 
+// Result describes one ranked search hit returned by the index.
+type Result = searchindex.Result
+
 // Service coordinates access to the persisted search index.
 //
 // The underlying index is kept in memory for fast reads. Mutating operations
@@ -40,11 +43,14 @@ func NewService(indexPath, uploadDir string) (*Service, error) {
 }
 
 // Search runs a full-text query against the current index.
-func (s *Service) Search(query string) []searchindex.Result {
+func (s *Service) Search(query string) []Result {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	results := s.idx.Search(query)
+	if results == nil {
+		results = []Result{}
+	}
 	missingSnippetCount := 0
 	for _, result := range results {
 		if len(result.Snippets) > 0 {
