@@ -14,6 +14,7 @@ Configuration:
 PORT=8080
 SEARCH_INDEX_PATH=search.idx
 UPLOAD_DIR=uploads
+CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 LOG_LEVEL=info
 LOG_FORMAT=text
 ```
@@ -24,6 +25,10 @@ the core repo directory. Exported shell variables still take priority.
 Logging is configured with `LOG_LEVEL` (`debug`, `info`, `warn`, or `error`)
 and `LOG_FORMAT` (`text` or `json`). Use `debug` while wiring UI behavior and
 `json` when shipping logs to a collector.
+
+`CORS_ALLOWED_ORIGINS` is a comma-separated list of browser origins allowed to
+call the API. The defaults cover the Vite dev server on `localhost` and
+`127.0.0.1`.
 
 ## Endpoints
 

@@ -43,8 +43,10 @@ func run() error {
 	}
 
 	server := &http.Server{
-		Addr:         cfg.Addr,
-		Handler:      httpapi.NewRouter(service),
+		Addr: cfg.Addr,
+		Handler: httpapi.NewRouterWithConfig(service, httpapi.RouterConfig{
+			AllowedOrigins: cfg.AllowedOrigins,
+		}),
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 30 * time.Second,
 		IdleTimeout:  60 * time.Second,
@@ -52,7 +54,13 @@ func run() error {
 
 	errCh := make(chan error, 1)
 	go func() {
-		slog.Info("search index core listening", "addr", cfg.Addr, "index_path", cfg.IndexPath, "upload_dir", cfg.UploadDir)
+		slog.Info(
+			"search index core listening",
+			"addr", cfg.Addr,
+			"index_path", cfg.IndexPath,
+			"upload_dir", cfg.UploadDir,
+			"cors_allowed_origins", cfg.AllowedOrigins,
+		)
 		errCh <- server.ListenAndServe()
 	}()
 
@@ -86,22 +94,24 @@ func loadDotEnv() error {
 
 // config contains the runtime settings needed by the HTTP server.
 type config struct {
-	Addr      string
-	IndexPath string
-	UploadDir string
-	LogLevel  string
-	LogFormat string
+	Addr           string
+	IndexPath      string
+	UploadDir      string
+	AllowedOrigins []string
+	LogLevel       string
+	LogFormat      string
 }
 
 // loadConfig reads runtime configuration from environment variables.
 func loadConfig() config {
 	port := getenv("PORT", "8080")
 	return config{
-		Addr:      fmt.Sprintf(":%s", port),
-		IndexPath: getenv("SEARCH_INDEX_PATH", "search.idx"),
-		UploadDir: getenv("UPLOAD_DIR", "uploads"),
-		LogLevel:  getenv("LOG_LEVEL", "info"),
-		LogFormat: getenv("LOG_FORMAT", "text"),
+		Addr:           fmt.Sprintf(":%s", port),
+		IndexPath:      getenv("SEARCH_INDEX_PATH", "search.idx"),
+		UploadDir:      getenv("UPLOAD_DIR", "uploads"),
+		AllowedOrigins: splitCSV(getenv("CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")),
+		LogLevel:       getenv("LOG_LEVEL", "info"),
+		LogFormat:      getenv("LOG_FORMAT", "text"),
 	}
 }
 
@@ -132,6 +142,18 @@ func parseLogLevel(value string) slog.Level {
 	default:
 		return slog.LevelInfo
 	}
+}
+
+// splitCSV turns a comma-separated environment value into trimmed entries.
+func splitCSV(value string) []string {
+	var result []string
+	for _, item := range strings.Split(value, ",") {
+		item = strings.TrimSpace(item)
+		if item != "" {
+			result = append(result, item)
+		}
+	}
+	return result
 }
 
 // getenv returns the environment value for key, or fallback when key is empty.
