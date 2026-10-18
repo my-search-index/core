@@ -47,7 +47,11 @@ func (s *Service) Search(query string) []Result {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	results := s.idx.Search(query)
+	results, err := s.idx.Search(query)
+	if err != nil {
+		slog.Error("search failed", "query", query, "error", err)
+		return []Result{}
+	}
 	if results == nil {
 		results = []Result{}
 	}
