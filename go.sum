@@ -2,5 +2,5 @@ github.com/go-chi/chi/v5 v5.3.0 h1:halUjDxhshgXHMrao5bB8eNBXo/rnzwr8m5m36glehM=
 github.com/go-chi/chi/v5 v5.3.0/go.mod h1:R+tYY2hNuVUUjxoPtqUdgBqevM9s9njzkTLutVsOCto=
 github.com/joho/godotenv v1.5.1 h1:7eLL/+HRGLY0ldzfGMeQkb7vMd0as4CfYvUVzLqw0N0=
 github.com/joho/godotenv v1.5.1/go.mod h1:f4LDr5Voq0i2e/R5DDNOoa2zzDfwtkZa6DnEwAbqwq4=
-github.com/my-search-index/search-index v1.1.0 h1:p8dVl55FbU1wtoU9UsKAE1BesZemMyEHRe/iPDJXFdU=
-github.com/my-search-index/search-index v1.1.0/go.mod h1:T8mJhU5cOZPxyaCjFfdo37dyeET3QVf5uzcno8mtdrM=
+github.com/my-search-index/search-index v1.2.0 h1:38woGLG8xEQz6iVZvay9QpPajdRvINczQ4tAvcCxQfo=
+github.com/my-search-index/search-index v1.2.0/go.mod h1:T8mJhU5cOZPxyaCjFfdo37dyeET3QVf5uzcno8mtdrM=
